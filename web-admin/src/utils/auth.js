@@ -1,11 +1,20 @@
 import Cookies from 'js-cookie'
 
 const TokenKey = 'Admin-Token'
-
 const ExpiresInKey = 'Admin-Expires-In'
 
+export function isValidJwt(token) {
+  if (!token || typeof token !== 'string') return false
+  return token.split('.').length === 3
+}
+
 export function getToken() {
-  return Cookies.get(TokenKey)
+  const token = Cookies.get(TokenKey)
+  if (token && !isValidJwt(token)) {
+    Cookies.remove(TokenKey)
+    return null
+  }
+  return token
 }
 
 export function setToken(token) {
@@ -13,7 +22,8 @@ export function setToken(token) {
 }
 
 export function removeToken() {
-  return Cookies.remove(TokenKey)
+  Cookies.remove(TokenKey)
+  Cookies.remove(ExpiresInKey)
 }
 
 export function getExpiresIn() {

@@ -52,12 +52,8 @@
           <span v-if="!loading">登 录</span>
           <span v-else>登 录 中...</span>
         </el-button>
-        <div style="float: right;" v-if="register">
-          <router-link class="link-type" :to="'/register'">立即注册</router-link>
-        </div>
       </el-form-item>
     </el-form>
-    <!--  底部  -->
     <div class="el-login-footer">
       <span>{{ footerContent }}</span>
     </div>
@@ -80,7 +76,7 @@ const { proxy } = getCurrentInstance()
 
 const loginForm = ref({
   username: "admin",
-  password: "admin123",
+  password: "",
   rememberMe: false,
   code: "",
   uuid: ""
@@ -94,51 +90,12 @@ const loginRules = {
 
 const codeUrl = ref("")
 const loading = ref(false)
-// 验证码开关
 const captchaEnabled = ref(true)
-// 注册开关
-const register = ref(false)
 const redirect = ref(undefined)
 
 watch(route, (newRoute) => {
     redirect.value = newRoute.query && newRoute.query.redirect
 }, { immediate: true })
-
-function handleLogin() {
-  proxy.$refs.loginRef.validate(valid => {
-    if (valid) {
-      loading.value = true
-      // 勾选了需要记住密码设置在 cookie 中设置记住用户名和密码
-      if (loginForm.value.rememberMe) {
-        Cookies.set("username", loginForm.value.username, { expires: 30 })
-        Cookies.set("password", encrypt(loginForm.value.password), { expires: 30 })
-        Cookies.set("rememberMe", loginForm.value.rememberMe, { expires: 30 })
-      } else {
-        // 否则移除
-        Cookies.remove("username")
-        Cookies.remove("password")
-        Cookies.remove("rememberMe")
-      }
-      // 调用action的登录方法
-      userStore.login(loginForm.value).then(() => {
-        const query = route.query
-        const otherQueryParams = Object.keys(query).reduce((acc, cur) => {
-          if (cur !== "redirect") {
-            acc[cur] = query[cur]
-          }
-          return acc
-        }, {})
-        router.push({ path: redirect.value || "/", query: otherQueryParams })
-      }).catch(() => {
-        loading.value = false
-        // 重新获取验证码
-        if (captchaEnabled.value) {
-          getCode()
-        }
-      })
-    }
-  })
-}
 
 function getCode() {
   getCodeImg().then(res => {
@@ -159,6 +116,38 @@ function getCookie() {
     password: password === undefined ? loginForm.value.password : decrypt(password),
     rememberMe: rememberMe === undefined ? false : Boolean(rememberMe)
   }
+}
+
+function handleLogin() {
+  proxy.$refs.loginRef.validate(valid => {
+    if (valid) {
+      loading.value = true
+      if (loginForm.value.rememberMe) {
+        Cookies.set("username", loginForm.value.username, { expires: 30 })
+        Cookies.set("password", encrypt(loginForm.value.password), { expires: 30 })
+        Cookies.set("rememberMe", loginForm.value.rememberMe, { expires: 30 })
+      } else {
+        Cookies.remove("username")
+        Cookies.remove("password")
+        Cookies.remove("rememberMe")
+      }
+      userStore.login(loginForm.value).then(() => {
+        const query = route.query
+        const otherQueryParams = Object.keys(query).reduce((acc, cur) => {
+          if (cur !== "redirect") {
+            acc[cur] = query[cur]
+          }
+          return acc
+        }, {})
+        router.push({ path: redirect.value || "/", query: otherQueryParams })
+      }).catch(() => {
+        loading.value = false
+        if (captchaEnabled.value) {
+          getCode()
+        }
+      })
+    }
+  })
 }
 
 getCode()
@@ -185,27 +174,26 @@ getCookie()
   background: #ffffff;
   width: 400px;
   padding: 25px 25px 5px 25px;
-  z-index: 1;
   .el-input {
-    height: 40px;
+    height: 38px;
     input {
-      height: 40px;
+      height: 38px;
     }
   }
   .input-icon {
     height: 39px;
     width: 14px;
-    margin-left: 0px;
+    margin-left: 2px;
   }
 }
 .login-tip {
   font-size: 13px;
-  text-align: center;
   color: #bfbfbf;
+  text-align: center;
 }
 .login-code {
   width: 33%;
-  height: 40px;
+  height: 38px;
   float: right;
   img {
     cursor: pointer;
@@ -225,7 +213,6 @@ getCookie()
   letter-spacing: 1px;
 }
 .login-code-img {
-  height: 40px;
-  padding-left: 12px;
+  height: 38px;
 }
 </style>
